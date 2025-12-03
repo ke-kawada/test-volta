@@ -1,0 +1,46 @@
+name: Check Node.js Version
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  check-node-version:
+    name: Check Node.js Version from package.json
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Read Node.js version from package.json
+        id: node-version
+        run: |
+          NODE_VERSION=$(jq -r '.volta.node' package.json)
+          echo "version=$NODE_VERSION" >> $GITHUB_OUTPUT
+          echo "Node.js version from package.json: $NODE_VERSION"
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: "./package.json"
+
+      - name: Verify Node.js version
+        run: |
+          echo "Expected Node.js version: ${{ steps.node-version.outputs.version }}"
+          echo "Actual Node.js version: $(node --version)"
+          if [ "$(node --version)" != "v${{ steps.node-version.outputs.version }}" ]; then
+            echo "⚠️ Node.js version mismatch!"
+            exit 1
+          else
+            echo "✅ Node.js version matches!"
+          fi
+
+      - name: Display Node.js information
+        run: |
+          echo "Node.js version: $(node --version)"
+          echo "npm version: $(npm --version)"
+          echo "Platform: $(uname -a)"
